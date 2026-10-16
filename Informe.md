@@ -5,8 +5,7 @@
 **Departamento de Computación y Sistemas Inteligentes (DCSI)**  
 **Curso:** Computación en Internet I (`09810 - TIC`)  
 **Período:** 2026-2 • **NRC:** 12378 / 12377  
-**Modalidad:** Nivel 3: Colaboración Asistida con IAG  
-**Tema:** Procesamiento Distribuido (MIMD / NORMA - *Shared-Nothing*)  
+
 
 ---
 
@@ -18,49 +17,6 @@
 | **Estudiante 2** | Carlos Pasinga | A00412446 |
 
 ---
-
-## 2. Resumen Ejecutivo y Arquitectura del Sistema
-
-El presente informe documenta el diseño, implementación, calibración y benchmarking empírico de un sistema de cómputo distribuido basado en el patrón arquitectónico **Master-Worker** y el modelo **MIMD / NORMA (No-Remote Memory Access / Shared-Nothing)**, comunicado a través del middleware de alto rendimiento **ZeroC Ice 3.8.3** y tipado mediante contratos en **Slice IDL** (`FractalCompute.ice`).
-
-El problema abordado es el renderizado en resolución **4K UHD (3840 × 2160)** del **Conjunto de Mandelbrot**, evaluando hasta **5.000 iteraciones por píxel** bajo la función de escape recursiva cuadrática:
-$$z_{n+1} = z_n^2 + c, \quad z_0 = 0$$
-
-Para superar las ineficiencias de los esquemas rígidos de partición estática y evitar que el Maestro mantenga hilos bloqueados esperando a los nodos de trabajo, la arquitectura implementa un modelo desacoplado de **Bolsa de Tareas Concurrente (*Bag of Tasks*)** con extracción dinámica asíncrona (**Work-Pulling**):
-
-```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│                               CLIENTE                                   │
-│  1. Ejecuta cómputo monohilo secuencial de control (T_sec = 64.365 ms)  │
-│  2. Invoca RPC: master.renderFractal(config)                            │
-│  3. Valida resultado celda por celda (8.294.400 píxeles, 0 errores)     │
-│  4. Computa Speedup (S) y Eficiencia (E), y persiste imagen PNG         │
-└────────────────────────────────────┬────────────────────────────────────┘
-                                     │ Invocación RPC (Ice / TCP)
-                                     ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                            MAESTRO (MASTER)                             │
-│  - Patrón Strategy: Descomposición geométrica en tareas (TaskTile)      │
-│  - ConcurrentLinkedQueue: Bolsa de tareas no bloqueante                 │
-│  - Callback Asíncrono: Notificación a observadores (WorkerObserver)     │
-│  - Atiende llamadas concurrentes: pollTask() y reportResult()           │
-│  - Consolidación en Streaming incremental directa a matriz final        │
-└──────────────────┬───────────────────────────────────┬──────────────────┘
-                   │                                   │
-      (1) notify   │                      (1) notify   │
-      (2) pollTask │                      (2) pollTask │
-      (3) report   │                      (3) report   │
-                   ▼                                   ▼
-┌─────────────────────────────────────┐ ┌─────────────────────────────────┐
-│          WORKER 1 (Worker-1)        │ │        WORKER 2 (Worker-2)      │
-│ - Espera pasiva (Standby sin CPU)   │ │ - Espera pasiva (Standby)       │
-│ - Alerta asíncrona notify()         │ │ - Alerta asíncrona notify()     │
-│ - Bucle de extracción: pollTask()   │ │ - Bucle de extracción: pollTask │
-│ - Cómputo local con ThreadPool      │ │ - Cómputo local con ThreadPool  │
-│ - Entrega: master.reportResult()    │ │ - Entrega: reportResult()       │
-└─────────────────────────────────────┘ └─────────────────────────────────┘
-```
-
 ### Principios Arquitectónicos Implementados:
 1. **Patrón Strategy Modular:** Mediante la interfaz `TaskPartitionStrategy` y la factoría `PartitionStrategyFactory`, el Maestro desvincula la lógica de división de tareas. Se alternó dinámicamente entre partición por franjas horizontales (`FixedCountPartitionStrategy`, $N$ tareas) y partición por cuadrícula de baldosas (`FixedTileSizePartitionStrategy`, $S \times S$ píxeles) sin requerir recompilación de código.
 2. **Work-Pulling & Balanceo Dinámico:** Los trabajadores extraen unidades de trabajo a su propio ritmo. Cuando un núcleo termina un bloque de espacio exterior rápido, solicita inmediatamente otra tarea, mitigando por completo el desbalance de carga que arruina a las estrategias estáticas.
@@ -178,9 +134,9 @@ Speedup (S)
 ## 5. Cuestionario de Análisis Conceptual y Discusión Técnica
 
 ### Pregunta 1: La Trampa del Espacio Vacío vs. Zona de Estrés
-> **Pregunta:** Explique por qué el cómputo monohilo secuencial en la vista clásica (*classic*) parece rápido a pesar de fijar 5,000 iteraciones, y contraste este comportamiento con el tiempo obtenido al renderizar la región hiperdensa de *Seahorse Valley*. ¿Por qué la vista macro oculta la necesidad de un clúster distribuido?
+**Pregunta:** Explique por qué el cómputo monohilo secuencial en la vista clásica (*classic*) parece rápido a pesar de fijar 5,000 iteraciones, y contraste este comportamiento con el tiempo obtenido al renderizar la región hiperdensa de *Seahorse Valley*. ¿Por qué la vista macro oculta la necesidad de un clúster distribuido?
 
-**Respuesta Técnica:**
+**Respuesta:**
 La aparente rapidez del cómputo secuencial en la vista clásica ($X \in [-2.0, 0.5], Y \in [-1.25, 1.25]$) se debe a la **naturaleza heterogénea intrínseca** del algoritmo de escape de Mandelbrot. Para cualquier punto complejo $c = x + iy$, la condición de escape evalúa:
 $$|z_n|^2 = x_n^2 + y_n^2 > 4.0$$
 
@@ -197,9 +153,9 @@ En la vista macro:
 ---
 
 ### Pregunta 2: Colapso por Grano Fino vs. Sobrecosto de Red
-> **Pregunta:** Al ejecutar con baldosas de $32 \times 32$ en 4K, se generan más de 8,000 transacciones RPC sobre la red. Explique técnicamente por qué el tiempo distribuido $T_{\text{dist}}$ se degrada frente a baldosas de $64 \times 64$, analizando el costo de serialización binaria en Slice, encabezados TCP y contención en la cola del Maestro.
+**Pregunta:** Al ejecutar con baldosas de $32 \times 32$ en 4K, se generan más de 8,000 transacciones RPC sobre la red. Explique técnicamente por qué el tiempo distribuido $T_{\text{dist}}$ se degrada frente a baldosas de $64 \times 64$, analizando el costo de serialización binaria en Slice, encabezados TCP y contención en la cola del Maestro.
 
-**Respuesta Técnica:**
+**Respuesta:**
 La degradación del tiempo en $32 \times 32$ ($T_{\text{dist}} = 9.253$ ms) frente a $64 \times 64$ ($T_{\text{dist}} = 9.132$ ms) y $128 \times 128$ ($T_{\text{dist}} = 9.020$ ms) ilustra de forma canónica el **dilema de granularidad**:
 
 1. **Explosión en la Cantidad de Transacciones RPC:**
@@ -224,9 +180,9 @@ La degradación del tiempo en $32 \times 32$ ($T_{\text{dist}} = 9.253$ ms) fren
 ---
 
 ### Pregunta 3: Fracaso de la Partición Estática
-> **Pregunta:** Al dividir la imagen en 2 o 4 franjas fijas (*FixedCount*), compare el tiempo de cómputo de cada worker. ¿Por qué ocurre un desbalance de carga tan severo y cómo el patrón dinámico *Bag of Tasks* resuelve esta limitación manteniendo la saturación de los núcleos?
+**Pregunta:** Al dividir la imagen en 2 o 4 franjas fijas (*FixedCount*), compare el tiempo de cómputo de cada worker. ¿Por qué ocurre un desbalance de carga tan severo y cómo el patrón dinámico *Bag of Tasks* resuelve esta limitación manteniendo la saturación de los núcleos?
 
-**Respuesta Técnica:**
+**Respuesta:**
 1. **Evidencia Experimental del Desbalance:**
    Al dividir 4K Seahorse Valley en $N = 2$ franjas horizontales:
    * La **Franja Superior** ($Y \in [0, 1080]$) abarca casi en su totalidad el espacio exterior rápido donde las órbitas divergen en $< 50$ iteraciones. El Worker asignado a esta franja finalizó su trabajo en **menos de 3 segundos**.
