@@ -1,6 +1,5 @@
 package co.icesi.fractal.strategy;
 
-import FractalApp.RenderConfig;
 import FractalApp.TaskTile;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,21 +32,20 @@ public class FixedCountPartitionStrategy implements TaskPartitionStrategy {
             int currentTileHeight = Math.min(rowsPerTask, height - currentY);
 
             TaskTile tile = new TaskTile(
-                true,
-                config.jobId,
-                taskId++,
-                0,                  // startX
-                currentY,           // startY
-                width,              // tileWidth (ancho completo)
-                currentTileHeight,  // tileHeight
-                width,              // totalWidth
-                height,             // totalHeight
-                config.xMin,
-                config.xMax,
-                config.yMin,
-                config.yMax,
-                config.maxIterations
-            );
+                    true,
+                    config.jobId,
+                    taskId++,
+                    0, // startX
+                    currentY, // startY
+                    width, // tileWidth (ancho completo)
+                    currentTileHeight, // tileHeight
+                    width, // totalWidth
+                    height, // totalHeight
+                    config.xMin,
+                    config.xMax,
+                    config.yMin,
+                    config.yMax,
+                    config.maxIterations);
 
             tiles.add(tile);
             currentY += currentTileHeight;

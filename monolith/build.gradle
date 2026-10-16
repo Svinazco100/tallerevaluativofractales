@@ -13,5 +13,6 @@ application {
 task runMonolith(type: JavaExec) {
     mainClass = 'co.icesi.fractal.monolith.MonolithicMain'
     classpath = sourceSets.main.runtimeClasspath
+    workingDir = rootProject.projectDir
     standardInput = System.in
 }

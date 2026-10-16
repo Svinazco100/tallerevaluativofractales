@@ -54,6 +54,13 @@ public class ExperimentRunner {
             System.out.printf("Region / Preset: %s (%s)%n", region.getName(), region.getId());
             System.out.printf("Resolucion:      %dx%d | MaxIter: %d | Workers: %d%n%n", width, height, maxIter, p);
 
+        long tSecOverride = (args.length >= 7) ? Long.parseLong(args[6]) : -1L;
+        long tSec;
+
+        if (tSecOverride > 0) {
+            tSec = tSecOverride;
+            System.out.printf("Utilizando T_sec precalculado: %d ms (%.2f s)%n%n", tSec, tSec / 1000.0);
+        } else {
             // 1. Linea base monohilo
             System.out.println("Calculando tiempo secuencial monohilo T_sec...");
             long t0Sec = System.currentTimeMillis();
@@ -67,54 +74,63 @@ public class ExperimentRunner {
                     MandelbrotCore.computePoint(cr, ci, maxIter);
                 }
             }
-            long tSec = System.currentTimeMillis() - t0Sec;
+            tSec = System.currentTimeMillis() - t0Sec;
             System.out.printf("T_sec = %d ms (%.2f s)%n%n", tSec, tSec / 1000.0);
+        }
 
-            // Casos experimentales:
-            // Tipo 0 (FixedCount): N = 2, 4, 8, 16 franjas
-            // Tipo 1 (FixedTileSize): S = 32, 64, 128, 256 px
-            int[][] testCases = {
-                {0, 2},   // Franjas: 2
-                {0, 4},   // Franjas: 4
-                {0, 8},   // Franjas: 8
-                {0, 16},  // Franjas: 16
-                {1, 32},  // Baldosas: 32x32 px
-                {1, 64},  // Baldosas: 64x64 px (grano optimo)
-                {1, 128}, // Baldosas: 128x128 px
-                {1, 256}  // Baldosas: 256x256 px (grano grueso)
-            };
+        // Casos experimentales exactos de la Tabla 1 del PDF (Seccion 5.1):
+        TestCase[] testCases = {
+            new TestCase("FixedCount (Franjas fijas)", "N = 2", "2 franjas", 0, 2),
+            new TestCase("FixedCount (Franjas fijas)", "N = 4", "4 franjas", 0, 4),
+            new TestCase("FixedCount (Franjas fijas)", "N = 16", "16 franjas", 0, 16),
+            new TestCase("FixedTileSize (Grano ultrafino)", "Baldosas 32 × 32", "8,160 baldosas", 1, 32),
+            new TestCase("FixedTileSize (Grano óptimo)", "Baldosas 64 × 64", "2,040 baldosas", 1, 64),
+            new TestCase("FixedTileSize (Grano intermedio)", "Baldosas 128 × 128", "510 baldosas", 1, 128),
+            new TestCase("FixedTileSize (Grano grueso)", "Baldosas 256 × 256", "135 baldosas", 1, 256)
+        };
 
-            System.out.println("| Estrategia | Parámetro | Tareas Generadas | T_sec (ms) | T_dist (ms) | Speedup (S) | Eficiencia (E) |");
-            System.out.println("| :--- | :---: | :---: | :---: | :---: | :---: | :---: |");
+        System.out.println("### Tabla 1: Matriz de impacto de la granularidad sobre el rendimiento distribuido en 4K UHD");
+        System.out.println("| Estrategia / Configuración | Parámetro | Tareas Creadas | T_sec (ms) | T_dist (ms) | Speedup (S) | Eficiencia (E) |");
+        System.out.println("| :--- | :---: | :---: | :---: | :---: | :---: | :---: |");
 
-            for (int[] tc : testCases) {
-                int stType = tc[0];
-                int stParam = tc[1];
-                String stName = (stType == 0) ? "FixedCount (Franjas)" : "FixedTileSize (Baldosas)";
+        for (TestCase tc : testCases) {
+            String jobId = "exp1-" + UUID.randomUUID().toString().substring(0, 8);
+            RenderConfig config = new RenderConfig(
+                jobId, width, height, xMin, xMax, yMin, yMax, maxIter, tc.strategyType, tc.strategyParam
+            );
 
-                String jobId = "exp-" + UUID.randomUUID().toString().substring(0, 8);
-                RenderConfig config = new RenderConfig(
-                    jobId, width, height, xMin, xMax, yMin, yMax, maxIter, stType, stParam
-                );
+            long t0Dist = System.currentTimeMillis();
+            master.renderFractal(config);
+            long tDist = System.currentTimeMillis() - t0Dist;
 
-                long t0Dist = System.currentTimeMillis();
-                master.renderFractal(config);
-                long tDist = System.currentTimeMillis() - t0Dist;
+            double speedup = (double) tSec / (double) Math.max(1, tDist);
+            double efficiency = (p > 0) ? (speedup / p) * 100.0 : 0.0;
 
-                double speedup = (double) tSec / (double) Math.max(1, tDist);
-                double efficiency = (p > 0) ? (speedup / p) * 100.0 : 0.0;
+            System.out.printf("| %s | %s | %s | %d | %d | %.2fx | %.1f%% |%n",
+                tc.name, tc.paramStr, tc.tasksStr, tSec, tDist, speedup, efficiency);
+        }
 
-                int tasksCount = (stType == 0) ? stParam : (int) (Math.ceil((double) width / stParam) * Math.ceil((double) height / stParam));
-
-                System.out.printf("| %s | %d | %d | %d | %d | %.2fx | %.1f%% |%n",
-                    stName, stParam, tasksCount, tSec, tDist, speedup, efficiency);
-            }
-
-            System.out.println("\n[FIN] Matriz experimental finalizada.");
+        System.out.println("\n[FIN] Matriz experimental finalizada.");
 
         } catch (java.lang.Exception e) {
             System.err.println("[ERROR] Error en el ejecutor de experimentos: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    static class TestCase {
+        final String name;
+        final String paramStr;
+        final String tasksStr;
+        final int strategyType;
+        final int strategyParam;
+
+        TestCase(String name, String paramStr, String tasksStr, int strategyType, int strategyParam) {
+            this.name = name;
+            this.paramStr = paramStr;
+            this.tasksStr = tasksStr;
+            this.strategyType = strategyType;
+            this.strategyParam = strategyParam;
         }
     }
 }

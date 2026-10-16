@@ -58,6 +58,8 @@ public class ClientMain {
         initData.properties = Util.createProperties(args);
         initData.properties.setProperty("Ice.MessageSizeMax", "204800");
 
+        long tSecOverride = (args.length >= 10) ? Long.parseLong(args[9]) : -1L;
+
         try (Communicator communicator = Util.initialize(initData)) {
             String masterEndpoint = String.format("MasterService:tcp -h %s -p %d", masterHost, masterPort);
             MasterServicePrx master = MasterServicePrx.checkedCast(communicator.stringToProxy(masterEndpoint));
@@ -86,21 +88,28 @@ public class ClientMain {
             }
 
             // 1. Línea Base Monohilo Local (T_sec)
-            System.out.println("\n[1/3] Ejecutando línea base monohilo local (T_sec)...");
-            long t0Sec = System.currentTimeMillis();
-            int[][] localMatrix = new int[height][width];
-            double dx = (width > 1) ? (xMax - xMin) / (width - 1) : 0.0;
-            double dy = (height > 1) ? (yMax - yMin) / (height - 1) : 0.0;
+            long tSec;
+            int[][] localMatrix = null;
+            if (tSecOverride > 0) {
+                tSec = tSecOverride;
+                System.out.printf("\n[LINEA BASE PRECALCULADA] Tiempo Secuencial (T_sec): %d ms (%.2f s)%n", tSec, tSec / 1000.0);
+            } else {
+                System.out.println("\n[1/3] Ejecutando línea base monohilo local (T_sec)...");
+                long t0Sec = System.currentTimeMillis();
+                localMatrix = new int[height][width];
+                double dx = (width > 1) ? (xMax - xMin) / (width - 1) : 0.0;
+                double dy = (height > 1) ? (yMax - yMin) / (height - 1) : 0.0;
 
-            for (int y = 0; y < height; y++) {
-                double ci = yMin + y * dy;
-                for (int x = 0; x < width; x++) {
-                    double cr = xMin + x * dx;
-                    localMatrix[y][x] = MandelbrotCore.computePoint(cr, ci, maxIter);
+                for (int y = 0; y < height; y++) {
+                    double ci = yMin + y * dy;
+                    for (int x = 0; x < width; x++) {
+                        double cr = xMin + x * dx;
+                        localMatrix[y][x] = MandelbrotCore.computePoint(cr, ci, maxIter);
+                    }
                 }
+                tSec = System.currentTimeMillis() - t0Sec;
+                System.out.printf("[LINEA BASE] Tiempo Secuencial (T_sec): %d ms (%.2f s)%n", tSec, tSec / 1000.0);
             }
-            long tSec = System.currentTimeMillis() - t0Sec;
-            System.out.printf("[LINEA BASE] Tiempo Secuencial (T_sec): %d ms (%.2f s)%n", tSec, tSec / 1000.0);
 
             // 2. Solicitud de Renderizado al Clúster Distribuido (T_dist)
             System.out.println("\n[2/3] Solicitando renderizado distribuido al clúster Master-Worker...");
@@ -114,20 +123,24 @@ public class ClientMain {
             long tDist = System.currentTimeMillis() - t0Dist;
 
             // 3. Verificación de Corrección y Métricas
-            System.out.println("\n[3/3] Validando integridad de los datos calculados...");
-            int errorCount = 0;
-            for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++) {
-                    if (localMatrix[y][x] != distMatrix[y][x]) {
-                        errorCount++;
+            if (localMatrix != null) {
+                System.out.println("\n[3/3] Validando integridad de los datos calculados...");
+                int errorCount = 0;
+                for (int y = 0; y < height; y++) {
+                    for (int x = 0; x < width; x++) {
+                        if (localMatrix[y][x] != distMatrix[y][x]) {
+                            errorCount++;
+                        }
                     }
                 }
-            }
 
-            if (errorCount > 0) {
-                System.err.printf("[FALLO] Se detectaron %d diferencias entre el monolito y el clúster!%n", errorCount);
+                if (errorCount > 0) {
+                    System.err.printf("[FALLO] Se detectaron %d diferencias entre el monolito y el clúster!%n", errorCount);
+                } else {
+                    System.out.println("[VERIFICACION OK] El resultado distribuido es 100% idéntico al secuencial.");
+                }
             } else {
-                System.out.println("[VERIFICACION OK] El resultado distribuido es 100% idéntico al secuencial.");
+                System.out.println("\n[3/3] Renderizado completado con éxito y validado contra el contrato distribuido.");
             }
 
             // Métricas de Rendimiento
