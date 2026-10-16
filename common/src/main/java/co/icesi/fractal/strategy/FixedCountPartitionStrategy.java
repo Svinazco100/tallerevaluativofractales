@@ -1,5 +1,6 @@
 package co.icesi.fractal.strategy;
 
+import FractalApp.RenderConfig;
 import FractalApp.TaskTile;
 import java.util.ArrayList;
 import java.util.List;
