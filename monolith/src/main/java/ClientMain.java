@@ -48,11 +48,7 @@ public class ClientMain {
         double yMax = region.getYMax();
 
         // Ajuste isometrico de aspecto
-        if (width > 0 && height > 0) {
-            double aspect = (double) width / (double) height;
-            double realHeight = yMax - yMin;
-            xMax = xMin + realHeight * aspect;
-        }
+
 
         InitializationData initData = new InitializationData();
         initData.properties = Util.createProperties(args);
@@ -128,6 +124,15 @@ public class ClientMain {
                 System.err.printf("[FALLO] Se detectaron %d diferencias entre el monolito y el clúster!%n", errorCount);
             } else {
                 System.out.println("[VERIFICACION OK] El resultado distribuido es 100% idéntico al secuencial.");
+            }
+
+            if (errorCount > 0) {
+
+                throw new IllegalStateException(
+                        "La imagen distribuida tiene "
+                                + errorCount
+                                + " pixeles diferentes al resultado secuencial."
+                );
             }
 
             // Métricas de Rendimiento
