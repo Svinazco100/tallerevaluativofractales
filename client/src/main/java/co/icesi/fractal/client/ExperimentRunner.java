@@ -101,6 +101,10 @@ public class ExperimentRunner {
         double ymin = region.getYMin();
         double ymax = region.getYMax();
 
+        if (width > 0 && height > 0) {
+            double aspect = (double) width / height;
+            xmax = xmin + (ymax - ymin) * aspect;
+        }
         InitializationData initData =
                 new InitializationData();
 

@@ -22,7 +22,19 @@
 2. **Work-Pulling & Balanceo Dinámico:** Los trabajadores extraen unidades de trabajo a su propio ritmo. Cuando un núcleo termina un bloque de espacio exterior rápido, solicita inmediatamente otra tarea, mitigando por completo el desbalance de carga que arruina a las estrategias estáticas.
 3. **Consolidación en Streaming Incremental:** El Maestro no almacena colas intermedias de resultados; copia directamente cada baldosa recibida sobre la matriz bidimensional final en memoria (`int[][]`), completando una promesa asíncrona (`CompletableFuture`) al arribar la última tarea.
 
----
+## 2, pruebas Monoliticas
+
+### Integrante 1: Santiago Vinazco Ortegón
+
+| Prueba | Resolución | Iteraciones | Región | Tiempo (s) |
+|---|---|---:|---|---:|
+| 1 | 2560x1440 | 6000 | seahorse | 71,88 |
+| 2 | 2560x1440 | 7000 | seahorse | 88,44 |
+| 3 | 3200x1800 | 5000 | seahorse | 100,08 |
+| 4 | 3840x2160 | 4000 | seahorse | 112,13 |
+| 5 | 3840x2160 | 5000 | seahorse | 136,61 |
+
+### Integrante 2: Carlos Pasinga 
 
 ## 3. Entorno Experimental y Caracterización de Hardware
 
