@@ -15,7 +15,7 @@
 | Rol | Nombre del Estudiante | Código Estudiantil |
 | :--- | :--- | :--- |
 | **Estudiante 1** | Santiago Vinazco | A00381989 |
-| **Estudiante 2** | Carlos Pasinga | 1107846955 |
+| **Estudiante 2** | Carlos Pasinga | A00412446 |
 
 ---
 
