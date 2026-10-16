@@ -115,7 +115,7 @@ fractal-master-worker/
 └── client/                                # Nodo Cliente y Banco de Pruebas
     ├── build.gradle
     └── src/main/java/co/icesi/fractal/client/
-        ├── ClientMain.java                # Benchmark único con validación de píxeles y Speedup
+        ├── co.icesi.fractal.client.ClientMain.java                # Benchmark único con validación de píxeles y Speedup
         └── ExperimentRunner.java          # Ejecutor automatizado de la matriz experimental
 ```
 

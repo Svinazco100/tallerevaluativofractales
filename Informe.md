@@ -13,16 +13,28 @@ Código: A00410365
 
 | Prueba | Resolución | Iteraciones | Región | Tiempo (s) |
 |---|---|---|---|---|
-| 1 | | | | |
-| 2 | | | | |
-| 3 | | | | |
-| 4 | | | | |
-| 5 | | | | |
+| 1 | 2560x1440| 6000| Seahorse| 71,88s|
+| 2 | 2560x1440|7000 |Seahorse |88,44s |
+| 3 |3200x1800 |5000 | Seahorse|100,88s |
+| 4 |3840 × 2160 |4000 |Seahorse |112,13s |
+| 5 |3840x2160 |5000 |Seahorse |136,61s |
 
 **Evidencias de ejecución:**
+prueba 1
+![img.png](img.png)
+prueba 2
+![img_1.png](img_1.png)
 
+prueba 3
+![img_2.png](img_2.png)
 
+prueba 4 
 
+![img_4.png](img_4.png)
+
+prueba 5
+
+![img_3.png](img_3.png)
 ### Integrante 2: Carlos Pasinga
 
 | Prueba | Resolución | Iteraciones | Región | Tiempo (s) |
