@@ -79,10 +79,26 @@ public class MandelbrotCore {
         }
 
         File outputFile = new File(outputPath);
-        if (outputFile.getParentFile() != null) {
-            outputFile.getParentFile().mkdirs();
+        File targetFile = outputFile;
+        try {
+            if (outputFile.getParentFile() != null) {
+                outputFile.getParentFile().mkdirs();
+            }
+            try (java.io.FileOutputStream fos = new java.io.FileOutputStream(outputFile, true)) {
+                // Archivo escribible en la ruta solicitada
+            }
+        } catch (Throwable t) {
+            // Si el sistema bloquea la escritura (Windows Controlled Folder Access), usar ruta de usuario
+            File fallbackDir = new File(System.getProperty("user.home"), ".fractal-output");
+            fallbackDir.mkdirs();
+            targetFile = new File(fallbackDir, outputFile.getName());
         }
-        ImageIO.write(image, "PNG", outputFile);
-        System.out.println("[MandelbrotCore] Imagen guardada satisfactoriamente en: " + outputFile.getAbsolutePath());
+
+        try {
+            ImageIO.write(image, "PNG", targetFile);
+            System.out.println("[MandelbrotCore] Imagen guardada satisfactoriamente en: " + targetFile.getAbsolutePath());
+        } catch (Exception e) {
+            System.err.println("[MandelbrotCore] [ERROR] No se pudo guardar la imagen: " + e.getMessage());
+        }
     }
 }

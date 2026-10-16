@@ -1,10 +1,17 @@
 plugins {
     id 'java-library'
-    id 'com.zeroc.gradle.ice-builder.slice'
 }
 
-slice {
-    java {
-        srcDir = 'src/main/slice'
-    }
+task compileSlice(type: Exec) {
+    def sliceFile = file('src/main/slice/FractalCompute.ice')
+    def outputDir = file('src/main/java')
+    inputs.file sliceFile
+    outputs.dir file('src/main/java/FractalApp')
+
+    commandLine 'C:/Users/mrtak/.gradle/native/slice-tools-3.8.3/bin/slice2java.exe',
+                '--output-dir', outputDir.absolutePath,
+                sliceFile.absolutePath
 }
+
+compileJava.dependsOn compileSlice
+

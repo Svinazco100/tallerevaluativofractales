@@ -13,6 +13,7 @@ application {
 task runMaster(type: JavaExec) {
     mainClass = 'co.icesi.fractal.master.MasterMain'
     classpath = sourceSets.main.runtimeClasspath
+    workingDir = rootProject.projectDir
     standardInput = System.in
 
     workingDir = rootProject.projectDir

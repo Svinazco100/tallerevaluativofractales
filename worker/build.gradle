@@ -13,6 +13,7 @@ application {
 task runWorker(type: JavaExec) {
     mainClass = 'co.icesi.fractal.worker.WorkerMain'
     classpath = sourceSets.main.runtimeClasspath
+    workingDir = rootProject.projectDir
     standardInput = System.in
 
     workingDir = rootProject.projectDir

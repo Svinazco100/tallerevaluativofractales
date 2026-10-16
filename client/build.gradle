@@ -13,6 +13,7 @@ application {
 task runClient(type: JavaExec) {
     mainClass = 'co.icesi.fractal.client.co.icesi.fractal.client.ClientMain'
     classpath = sourceSets.main.runtimeClasspath
+    workingDir = rootProject.projectDir
     standardInput = System.in
 
     workingDir = rootProject.projectDir
@@ -22,6 +23,7 @@ task runClient(type: JavaExec) {
 task runExperiment(type: JavaExec) {
     mainClass = 'co.icesi.fractal.client.ExperimentRunner'
     classpath = sourceSets.main.runtimeClasspath
+    workingDir = rootProject.projectDir
     standardInput = System.in
 
     workingDir = rootProject.projectDir

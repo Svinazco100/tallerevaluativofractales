@@ -1,11 +1,8 @@
-plugins {
-    id 'com.zeroc.gradle.ice-builder.slice' version '1.5.0' apply false
-}
-
 allprojects {
     repositories {
         mavenCentral()
     }
+    layout.buildDirectory = file("C:/Users/mrtak/.gradle-builds/tallerevaluativofractales/" + project.name)
 }
 
 subprojects {
@@ -17,6 +14,6 @@ subprojects {
     }
 
     dependencies {
-        implementation 'com.zeroc:ice:3.7.10'
+        implementation 'com.zeroc:ice:3.8.3'
     }
 }
