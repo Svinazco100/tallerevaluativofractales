@@ -2,21 +2,16 @@ plugins {
     id 'java-library'
 }
 
-def generatedSliceDir = file("C:/Users/mrtak/.gradle-builds/tallerevaluativofractales/common/generated-src")
-
 task compileSlice(type: Exec) {
     def sliceFile = file('src/main/slice/FractalCompute.ice')
+    def outputDir = file('src/main/java')
     inputs.file sliceFile
-    outputs.dir generatedSliceDir
-
-    doFirst {
-        generatedSliceDir.mkdirs()
-    }
+    outputs.dir file('src/main/java/FractalApp')
 
     commandLine 'C:/Users/mrtak/.gradle/native/slice-tools-3.8.3/bin/slice2java.exe',
-                '--output-dir', generatedSliceDir.absolutePath,
+                '--output-dir', outputDir.absolutePath,
                 sliceFile.absolutePath
 }
 
-sourceSets.main.java.srcDirs += generatedSliceDir
 compileJava.dependsOn compileSlice
+
