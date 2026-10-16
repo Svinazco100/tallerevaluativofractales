@@ -36,6 +36,14 @@
 
 ### Integrante 2: Carlos Pasinga 
 
+| Prueba | Resolución | Iteraciones | Región | Tiempo (s) |
+|---|---|---:|---|---:|
+| 1 | 2560x1440 | 6000 | seahorse | 33,88 |
+| 2 | 2560x1440 | 7000 | seahorse | 39,29 |
+| 3 | 3200x1800 | 5000 | seahorse | 44,14 |
+| 4 | 3840x2160 | 4000 | seahorse | 51,22 |
+| 5 | 3840x2160 | 5000 | seahorse | 63,57 |
+
 ## 3. Entorno Experimental y Caracterización de Hardware
 
 * **Procesador (CPU):** AMD Ryzen 5 5600G with Radeon Graphics (6 núcleos físicos, 12 subprocesos lógicos SMT @ 3.9 GHz base / 4.4 GHz boost, Caché L3 de 16 MB).

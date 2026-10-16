@@ -2,7 +2,7 @@ allprojects {
     repositories {
         mavenCentral()
     }
-    layout.buildDirectory = file("$rootDir/.gradle-builds/${project.name}")
+    layout.buildDirectory = file("${System.getProperty('user.home')}/.gradle-builds/tallerevaluativofractales/${project.name}")
 }
 
 subprojects {

@@ -7,10 +7,20 @@ task compileSlice(type: Exec) {
     def outputDir = file('src/main/java')
     inputs.file sliceFile
     outputs.dir file('src/main/java/FractalApp')
- commandLine (System.getenv('SLICE2JAVA') ?: 'slice2java'),
+    def sliceExe = System.getenv('SLICE2JAVA') ?: (file('C:/Users/mrtak/.gradle/native/slice-tools-3.8.3/bin/slice2java.exe').exists() ? 'C:/Users/mrtak/.gradle/native/slice-tools-3.8.3/bin/slice2java.exe' : 'slice2java')
+    commandLine sliceExe,
                 '--output-dir', outputDir.absolutePath,
                 sliceFile.absolutePath
 }
 
-compileJava.dependsOn compileSlice
+sourceSets {
+    main {
+        java {
+            exclude '**/AsyncMasterService.java'
+            exclude '**/AsyncWorkerObserver.java'
+        }
+    }
+}
 
+compileSlice.onlyIf { !file('src/main/java/FractalApp/MasterService.java').exists() }
+compileJava.dependsOn compileSlice
