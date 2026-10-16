@@ -7,11 +7,11 @@ dependencies {
 }
 
 application {
-    mainClass = 'co.icesi.fractal.client.ClientMain'
+    mainClass = 'co.icesi.fractal.client.co.icesi.fractal.client.ClientMain'
 }
 
 task runClient(type: JavaExec) {
-    mainClass = 'co.icesi.fractal.client.ClientMain'
+    mainClass = 'co.icesi.fractal.client.co.icesi.fractal.client.ClientMain'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = rootProject.projectDir
     standardInput = System.in
