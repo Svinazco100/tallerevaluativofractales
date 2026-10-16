@@ -1,55 +1,10 @@
 # Informe Técnico: Renderizado Distribuido de Fractales con Patrón Master-Worker y Bag of Tasks
 
-# Taller Evaluativo: Fractales Master-Worker
-# INTEGRANTES
-
--Santiago Vinazco Ortegon
-
--Carlos Pasinga
-
-## 1. Resultados individuales: ejecución monolítica
-
-### Integrante 1: Santiago Vinazco Ortegón
-Código: A00410365
-
-| Prueba | Resolución | Iteraciones | Región | Tiempo (s) |
-|---|---|---|---|---|
-| 1 | 2560x1440| 6000| Seahorse| 71,88s|
-| 2 | 2560x1440|7000 |Seahorse |88,44s |
-| 3 |3200x1800 |5000 | Seahorse|100,88s |
-| 4 |3840 × 2160 |4000 |Seahorse |112,13s |
-| 5 |3840x2160 |5000 |Seahorse |136,61s |
-
-**Evidencias de ejecución:**
-prueba 1
-![img.png](img.png)
-prueba 2
-![img_1.png](img_1.png)
-
-prueba 3
-![img_2.png](img_2.png)
-
-prueba 4 
-
-![img_4.png](img_4.png)
-
-prueba 5
-
-![img_3.png](img_3.png)
-### Integrante 2: Carlos Pasinga
-
-| Prueba | Resolución | Iteraciones | Región | Tiempo (s) |
-|---|---|---|---|---|
-| 1 | | | | |
-| 2 | | | | |
-| 3 | | | | |
-| 4 | | | | |
-| 5 | | | | |
-
-**Evidencias de ejecución:**
-
-
-
+**Universidad Icesi**  
+**Facultad de Ingeniería, Diseño y Ciencias Aplicadas**  
+**Departamento de Computación y Sistemas Inteligentes (DCSI)**  
+**Curso:** Computación en Internet I (`09810 - TIC`)  
+**Período:** 2026-2 • **NRC:** 12378 / 12377  
 
 
 ---
@@ -67,7 +22,19 @@ prueba 5
 2. **Work-Pulling & Balanceo Dinámico:** Los trabajadores extraen unidades de trabajo a su propio ritmo. Cuando un núcleo termina un bloque de espacio exterior rápido, solicita inmediatamente otra tarea, mitigando por completo el desbalance de carga que arruina a las estrategias estáticas.
 3. **Consolidación en Streaming Incremental:** El Maestro no almacena colas intermedias de resultados; copia directamente cada baldosa recibida sobre la matriz bidimensional final en memoria (`int[][]`), completando una promesa asíncrona (`CompletableFuture`) al arribar la última tarea.
 
----
+## 2, pruebas Monoliticas
+
+### Integrante 1: Santiago Vinazco Ortegón
+
+| Prueba | Resolución | Iteraciones | Región | Tiempo (s) |
+|---|---|---:|---|---:|
+| 1 | 2560x1440 | 6000 | seahorse | 71,88 |
+| 2 | 2560x1440 | 7000 | seahorse | 88,44 |
+| 3 | 3200x1800 | 5000 | seahorse | 100,08 |
+| 4 | 3840x2160 | 4000 | seahorse | 112,13 |
+| 5 | 3840x2160 | 5000 | seahorse | 136,61 |
+
+### Integrante 2: Carlos Pasinga 
 
 ## 3. Entorno Experimental y Caracterización de Hardware
 

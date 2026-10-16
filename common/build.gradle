@@ -7,8 +7,7 @@ task compileSlice(type: Exec) {
     def outputDir = file('src/main/java')
     inputs.file sliceFile
     outputs.dir file('src/main/java/FractalApp')
-
-    commandLine 'C:/Users/mrtak/.gradle/native/slice-tools-3.8.3/bin/slice2java.exe',
+ commandLine (System.getenv('SLICE2JAVA') ?: 'slice2java'),
                 '--output-dir', outputDir.absolutePath,
                 sliceFile.absolutePath
 }

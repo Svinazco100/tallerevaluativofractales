@@ -2,7 +2,7 @@ allprojects {
     repositories {
         mavenCentral()
     }
-    layout.buildDirectory = file("C:/Users/mrtak/.gradle-builds/tallerevaluativofractales/" + project.name)
+    layout.buildDirectory = file("$rootDir/.gradle-builds/${project.name}")
 }
 
 subprojects {
@@ -14,6 +14,6 @@ subprojects {
     }
 
     dependencies {
-        implementation 'com.zeroc:ice:3.8.3'
+        implementation 'com.zeroc:ice:3.7.10'
     }
 }
