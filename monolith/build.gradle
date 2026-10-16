@@ -14,4 +14,13 @@ task runMonolith(type: JavaExec) {
     mainClass = 'co.icesi.fractal.monolith.MonolithicMain'
     classpath = sourceSets.main.runtimeClasspath
     standardInput = System.in
+
+    workingDir = rootProject.projectDir
+
+}
+
+task runSmokeTest(type: JavaExec) {
+    mainClass = 'co.icesi.fractal.monolith.SmokeTestMain'
+    classpath = sourceSets.main.runtimeClasspath
+    workingDir = rootProject.projectDir
 }

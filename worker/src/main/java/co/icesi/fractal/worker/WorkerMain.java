@@ -4,6 +4,11 @@ import FractalApp.*;
 import co.icesi.fractal.core.MandelbrotCore;
 import com.zeroc.Ice.*;
 import java.util.concurrent.*;
+import java.net.InetAddress;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
 
 /**
  * Punto de entrada del Nodo Trabajador (Worker).
@@ -24,17 +29,29 @@ public class WorkerMain {
     private final int masterPort;
     private final int threadsCount;
 
+    private final String callbackHost;
+
+    private final AtomicBoolean processing =
+            new AtomicBoolean(false);
+
+    private final AtomicReference<String> pendingJobId =
+            new AtomicReference<>();
+
     private Communicator communicator;
     private MasterServicePrx master;
     private ExecutorService executor;
 
-    public WorkerMain(String workerId, int workerPort, String masterHost, int masterPort, int threadsCount) {
+
+    public WorkerMain(String workerId, int workerPort, String masterHost, int masterPort, int threadsCount, String callbackHost) {
+
         this.workerId = workerId;
         this.workerPort = workerPort;
         this.masterHost = masterHost;
         this.masterPort = masterPort;
         this.threadsCount = Math.max(1, threadsCount);
+        this.callbackHost = callbackHost;
     }
+
 
     public void start(String[] args) {
         executor = Executors.newFixedThreadPool(threadsCount);
@@ -63,9 +80,8 @@ public class WorkerMain {
                 System.err.println("[ERROR] No se pudo obtener el proxy valido de MasterService en " + masterEndpoint);
                 return;
             }
-
             // 3. Registrarse en el Master pasando el proxy con endpoint explicito
-            String observerEndpoint = String.format("WorkerObserver:tcp -h 127.0.0.1 -p %d", workerPort);
+            String observerEndpoint = String.format("WorkerObserver:tcp -h %s -p %d", callbackHost, workerPort);
             WorkerObserverPrx observer = WorkerObserverPrx.checkedCast(communicator.stringToProxy(observerEndpoint));
             master.registerWorker(workerId, observer);
 
@@ -102,65 +118,158 @@ public class WorkerMain {
      * Invocado cuando el Master notifica que hay tareas encoladas para un nuevo trabajo.
      */
     public void onTasksAvailable(String jobId) {
-        System.out.printf("[%s] [EVENTO] Tareas disponibles para el trabajo '%s'. Despertando %d hilos de computo...%n",
-            workerId, jobId, threadsCount);
+
+        if (!processing.compareAndSet(false, true)) {
+            pendingJobId.set(jobId);
+            return;
+        }
+
+        System.out.printf(
+                "[%s] Trabajo recibido: %s%n",
+                workerId,
+                jobId
+        );
+
+        AtomicInteger remaining =
+                new AtomicInteger(threadsCount);
 
         for (int i = 0; i < threadsCount; i++) {
+
             final int threadId = i + 1;
+
             executor.submit(() -> {
-                while (true) {
-                    // PULL: Pedir tarea al Master
-                    TaskTile task = null;
-                    try {
-                        task = master.pollTask(workerId);
-                    } catch (java.lang.Exception e) {
-                        System.err.printf("[%s-H%d] Error al hacer pollTask: %s%n", workerId, threadId, e.getMessage());
-                        break;
+
+                try {
+
+                    while (true) {
+
+                        TaskTile task;
+
+                        try {
+
+                            task = master.pollTask(workerId);
+
+                        } catch (java.lang.Exception e) {
+
+                            System.err.printf(
+                                    "[%s-H%d] Error al solicitar tarea: %s%n",
+                                    workerId,
+                                    threadId,
+                                    e.getMessage()
+                            );
+
+                            break;
+                        }
+
+                        if (task == null || !task.hasTask) {
+                            break;
+                        }
+
+                        long start =
+                                System.nanoTime();
+
+                        int[][] pixels =
+                                MandelbrotCore.computeTile(task);
+
+                        long computeTimeMs =
+                                (System.nanoTime() - start)
+                                        / 1_000_000;
+
+                        TileResult result = new TileResult(
+                                task.jobId,
+                                task.taskId,
+                                task.startX,
+                                task.startY,
+                                task.tileWidth,
+                                task.tileHeight,
+                                pixels,
+                                computeTimeMs,
+                                workerId
+                        );
+
+                        try {
+
+                            master.reportResult(result);
+
+                        } catch (java.lang.Exception e) {
+
+                            System.err.printf(
+                                    "[%s-H%d] Error en tarea %d: %s%n",
+                                    workerId,
+                                    threadId,
+                                    task.taskId,
+                                    e.getMessage()
+                            );
+
+                            break;
+                        }
                     }
 
-                    // Si no hay tareas pendientes en el Master, salir del bucle de trabajo
-                    if (task == null || !task.hasTask) {
-                        break;
-                    }
+                } finally {
 
-                    // PROCESAR: Computo matematico intensivo de la baldosa asignada
-                    long t0 = System.currentTimeMillis();
-                    int[][] pixels = MandelbrotCore.computeTile(task);
-                    long computeTimeMs = System.currentTimeMillis() - t0;
+                    if (remaining.decrementAndGet() == 0) {
 
-                    // REPORTAR: Enviar el resultado parcial al Master
-                    TileResult result = new TileResult(
-                        task.jobId,
-                        task.taskId,
-                        task.startX,
-                        task.startY,
-                        task.tileWidth,
-                        task.tileHeight,
-                        pixels,
-                        computeTimeMs,
-                        workerId
-                    );
+                        processing.set(false);
 
-                    try {
-                        master.reportResult(result);
-                    } catch (java.lang.Exception e) {
-                        System.err.printf("[%s-H%d] Error al reportar resultado de tarea #%d: %s%n",
-                            workerId, threadId, task.taskId, e.getMessage());
-                        break;
+                        String pending =
+                                pendingJobId.getAndSet(null);
+
+                        if (pending != null) {
+                            onTasksAvailable(pending);
+                        }
                     }
                 }
             });
         }
     }
 
-    public static void main(String[] args) {
-        int workerPort = (args.length >= 1) ? Integer.parseInt(args[0]) : 10001;
-        String workerId = (args.length >= 2) ? args[1] : "Worker-" + workerPort;
-        String masterHost = (args.length >= 3) ? args[2] : "localhost";
-        int masterPort = (args.length >= 4) ? Integer.parseInt(args[3]) : 10000;
-        int threads = (args.length >= 5) ? Integer.parseInt(args[4]) : Runtime.getRuntime().availableProcessors();
 
-        WorkerMain worker = new WorkerMain(workerId, workerPort, masterHost, masterPort, threads);
+
+    public static void main(String[] args) {
+
+        int workerPort = args.length >= 1
+                ? Integer.parseInt(args[0])
+                : 10001;
+
+        String workerId = args.length >= 2
+                ? args[1]
+                : "Worker-" + workerPort;
+
+        String masterHost = args.length >= 3
+                ? args[2]
+                : "localhost";
+
+        int masterPort = args.length >= 4
+                ? Integer.parseInt(args[3])
+                : 10000;
+
+        int threads = args.length >= 5
+                ? Integer.parseInt(args[4])
+                : Runtime.getRuntime().availableProcessors();
+
+        String callbackHost;
+
+        try {
+
+            callbackHost = args.length >= 6
+                    ? args[5]
+                    : InetAddress.getLocalHost().getHostAddress();
+
+        } catch (java.net.UnknownHostException e) {
+
+            callbackHost = "127.0.0.1";
+        }
+
+        WorkerMain worker = new WorkerMain(
+                workerId,
+                workerPort,
+                masterHost,
+                masterPort,
+                threads,
+                callbackHost
+        );
+
         worker.start(args);
     }
+
 }
