@@ -15,8 +15,7 @@
 | Rol | Nombre del Estudiante | Código Estudiantil |
 | :--- | :--- | :--- |
 | **Estudiante 1** | Santiago Vinazco | A00381989 |
-| **Estudiante 2** | [Nombre Integrante 2] | [Código] |
-| **Estudiante 3** | [Nombre Integrante 3] | [Código] |
+| **Estudiante 2** | Carlos Pasinga | 1107846955 |
 
 ---
 
@@ -326,15 +325,22 @@ La fracción secuencial efectiva aumenta de **13,3%** a **21,2%** al escalar a 4
 
 En cumplimiento de las políticas institucionales de la Universidad Icesi para la modalidad **Nivel 3: Colaboración Asistida**:
 
-1. **Prompts Clave Utilizados:**
-   * *"Analizar las dependencias multimódulo de Gradle para compatibilizar el plugin de ZeroC Ice y la versión de Java instalada en Windows."*
-   * *"Identificar el motivo por el cual ImageIO y los procesos Gradle arrojan 'java.io.IOException: Acceso denegado' en entornos de Windows con carpetas sincronizadas en OneDrive."*
-   * *"Formular el modelo de Amdahl y el cálculo algebraico de la fracción secuencial (1 - f) a partir de los tiempos distribuidos T_1, T_2 y T_4 en el clúster Master-Worker."*
+### 6.1 Herramientas Utilizadas
+* **ChatGPT (OpenAI)**: Exploración conceptual inicial, diseño de particiones y comprensión del ciclo de vida del middleware.
+* **Google Antigravity IDE**: Diagnóstico de dependencias Gradle, resolución de bloqueos de sistema operativo en Windows, ejecución de benchmarks distribuidos e integración del modelo matemático de Amdahl.
 
-2. **Asistencia Recibida en la Depuración:**
-   * **Diagnóstico de Controlled Folder Access:** Se identificó que la protección contra ransomware de Windows Defender (`EnableControlledFolderAccess = 1`) y la sincronización en tiempo real de OneDrive bloqueaban el bloqueo de archivos de caché en `.gradle` y la creación de imágenes mediante `RandomAccessFile`. Se solucionó reubicando `layout.buildDirectory` en una ruta externa segura y creando un mecanismo resiliente de almacenamiento en `MandelbrotCore.java`.
-   * **Sincronización de Contratos Slice:** Se resolvió la discrepancia de clases generadas entre `slice-tools-3.8.3` y la librería `com.zeroc:ice`, adaptando la compilación directa mediante tarea `Exec` en Gradle.
+### 6.2 Prompts Clave Utilizados
+* *"¿Cómo funciona la arquitectura Master-Worker con bolsa de tareas (Bag of Tasks) y cómo se comunican asíncronamente los Workers con el Maestro a través de ZeroC Ice?"*
+* *"¿Cómo implementar el patrón Strategy para dividir dinámicamente la imagen en franjas horizontales contiguas (FixedCount) y cuadrícula de baldosas (FixedTileSize) sin recompilar?"*
+* *"Analizar las dependencias multimódulo de Gradle para compatibilizar el plugin de ZeroC Ice y la versión de Java instalada en Windows."*
+* *"Identificar el motivo por el cual ImageIO y los procesos Gradle arrojan 'java.io.IOException: Acceso denegado' en entornos de Windows con carpetas sincronizadas en OneDrive."*
+* *"Formular el modelo de Amdahl y el cálculo algebraico de la fracción secuencial (1 - f) a partir de los tiempos distribuidos T_1, T_2 y T_4 en el clúster Master-Worker."*
 
-3. **Justificación Crítica del Código Incorporado:**
-   * Todo el código generado fue validado numéricamente celda por celda frente a la ejecución monohilo secuencial mediante aserciones estrictas sobre los **8.294.400 píxeles** de la matriz 4K, certificando una discrepancia de exactamente 0 píxeles erróneos.
-   * Las mediciones experimentales reportadas en las Tablas 1, 2 y 3 corresponden a ejecuciones empíricas reales tomadas en el procesador AMD Ryzen 5 5600G en tiempo de ejecución.
+### 6.3 Asistencia Recibida en la Depuración
+* **Diagnóstico de Controlled Folder Access:** Se identificó que la protección contra ransomware de Windows Defender (`EnableControlledFolderAccess = 1`) y la sincronización en tiempo real de OneDrive bloqueaban el bloqueo de archivos de caché en `.gradle` y la creación de imágenes mediante `RandomAccessFile`. Se solucionó reubicando `layout.buildDirectory` en una ruta externa segura y creando un mecanismo resiliente de almacenamiento en `MandelbrotCore.java`.
+* **Sincronización de Contratos Slice:** Se resolvió la discrepancia de clases generadas entre `slice-tools-3.8.3` y la librería `com.zeroc:ice`, adaptando la compilación directa mediante tarea `Exec` en Gradle.
+* **Manejo de Concurrencia y Sincronización:** Se optimizó la consolidación en streaming incremental mediante `System.arraycopy()` sobre la matriz global compartida, evitando copias intermedias y garantizando que el `CompletableFuture` del trabajo despierte de inmediato al registrarse la última baldosa.
+
+### 6.4 Justificación Crítica del Código Incorporado
+* Todo el código generado fue validado numéricamente celda por celda frente a la ejecución monohilo secuencial mediante aserciones estrictas sobre los **8.294.400 píxeles** de la matriz 4K en la región hiperdensa de *Seahorse Valley*, certificando una discrepancia de exactamente 0 píxeles erróneos (100% de paridad bit a bit).
+* Las mediciones experimentales reportadas en las Tablas 1, 2 y 3 corresponden a ejecuciones empíricas reales tomadas en el procesador AMD Ryzen 5 5600G en tiempo de ejecución.
