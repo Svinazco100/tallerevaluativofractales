@@ -15,4 +15,7 @@ task runMaster(type: JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     workingDir = rootProject.projectDir
     standardInput = System.in
+
+    workingDir = rootProject.projectDir
+
 }

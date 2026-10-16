@@ -20,33 +20,36 @@ public class FixedCountPartitionStrategy implements TaskPartitionStrategy {
     @Override
     public List<TaskTile> partition(RenderConfig config) {
         List<TaskTile> tiles = new ArrayList<>();
+
         int width = config.width;
         int height = config.height;
         int n = Math.min(taskCount, height);
 
-        int rowsPerTask = (int) Math.ceil((double) height / n);
-
-        int taskId = 0;
+        int baseHeight = height / n;
+        int remainingRows = height % n;
         int currentY = 0;
 
-        while (currentY < height) {
-            int currentTileHeight = Math.min(rowsPerTask, height - currentY);
+        for (int taskId = 0; taskId < n; taskId++) {
+
+            int currentTileHeight =
+                    baseHeight + (taskId < remainingRows ? 1 : 0);
 
             TaskTile tile = new TaskTile(
                     true,
                     config.jobId,
-                    taskId++,
-                    0, // startX
-                    currentY, // startY
-                    width, // tileWidth (ancho completo)
-                    currentTileHeight, // tileHeight
-                    width, // totalWidth
-                    height, // totalHeight
+                    taskId,
+                    0,
+                    currentY,
+                    width,
+                    currentTileHeight,
+                    width,
+                    height,
                     config.xMin,
                     config.xMax,
                     config.yMin,
                     config.yMax,
-                    config.maxIterations);
+                    config.maxIterations
+            );
 
             tiles.add(tile);
             currentY += currentTileHeight;
